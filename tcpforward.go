@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -20,6 +21,30 @@ func forward(conn net.Conn) {
 		defer conn.Close()
 		return
 	}
+	longBuf := make([]byte, 256)
+
+	log.Printf("Connected to %v\n, read greeting", client.RemoteAddr())
+	if _, err := io.ReadAtLeast(client, longBuf, 30); err != nil {
+		fmt.Println("error:", err)
+	}
+	log.Printf("received: %s", longBuf)
+
+	log.Printf("Sending EHLO test.com to %v\n", client.RemoteAddr())
+	client.Write([]byte("EHLO test.com\r\n"))
+	log.Printf("reading from client..")
+	if _, err := io.ReadAtLeast(client, longBuf, 60); err != nil {
+		fmt.Println("error:", err)
+	}
+	log.Printf("received: %s", longBuf)
+
+	log.Printf("Sending TLSSTART to %v\n", client.RemoteAddr())
+	client.Write([]byte("STARTTLS\r\n"))
+	log.Printf("reading from client..")
+	if _, err := io.ReadAtLeast(client, longBuf, 10); err != nil {
+		fmt.Println("error:", err)
+	}
+	log.Printf("received: %s", longBuf)
+
 	log.Printf("Forwarding from %v to %v\n", conn.LocalAddr(), client.RemoteAddr())
 	go func() {
 		defer client.Close()
